@@ -3,6 +3,7 @@ import logging
 import inspect
 import urllib3
 import click
+import sys
 
 from cobra.mit.request import ClassQuery, DnQuery, DeploymentQuery, ConfigRequest
 from cobra.mit.access import MoDirectory
@@ -23,7 +24,6 @@ class ACIClean(object):
         self.log = logging.getLogger(__name__)
         self.report_data: list = []
         self.md = self.login(apic_url, apic_user, apic_password)
-        # self.mock()
 
     def login(self, apic_url, apic_user, apic_password):
         session = LoginSession(apic_url, apic_user, apic_password)
@@ -32,7 +32,7 @@ class ACIClean(object):
             md.login()
         except Exception as e:
             self.log.error(f"Failed to login to APIC at {apic_url} with user {apic_user}:{e}")
-            raise Exception
+            sys.exit(1)
         self.md = md
 
         return md
