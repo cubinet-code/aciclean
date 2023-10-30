@@ -73,6 +73,7 @@ class ACIClean(object):
         return methods
 
     def find_relations(self, cls: str, target_paths: list):
+        print(f"Looking for policy classes: {cls} ...")
         calling_method = inspect.stack()[1][3]
         self.log.info(f"{'*' * 20} {calling_method}")
 
