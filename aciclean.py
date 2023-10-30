@@ -18,9 +18,13 @@ def get_dn_string(objects: list) -> list:
 
 
 class ACIClean(object):
-    def __init__(self, apic_url="", apic_user="", apic_password="", debug=False) -> None:
+    def __init__(
+        self, apic_url="", apic_user="", apic_password="", debug=False
+    ) -> None:
         if debug:
-            logging.basicConfig(level=logging.INFO, format="[%(levelname)10s]: %(message)s")
+            logging.basicConfig(
+                level=logging.INFO, format="[%(levelname)10s]: %(message)s"
+            )
         self.log = logging.getLogger(__name__)
         self.report_data: list = []
         self.md = self.login(apic_url, apic_user, apic_password)
@@ -31,7 +35,9 @@ class ACIClean(object):
         try:
             md.login()
         except Exception as e:
-            self.log.error(f"Failed to login to APIC at {apic_url} with user {apic_user}:{e}")
+            self.log.error(
+                f"Failed to login to APIC at {apic_url} with user {apic_user}:{e}"
+            )
             sys.exit(1)
         self.md = md
 
@@ -44,8 +50,15 @@ class ACIClean(object):
         self.g.physDomP("DOM_PHY_EMPTY")
         self.g.fvnsVlanInstP("VLP_EMPTY")
         AEP_PYTEST = self.g.infraAttEntityP("AEP_PYTEST")
-        self.g.create_access(AEP_PYTEST, nodes=["3101"], ports=["10"], remote_name=["remote_name1"])
-        self.g.create_access(AEP_PYTEST, nodes=["3101", "3102"], ports=["20"], remote_name=["remote_name1", "remote_name2"])
+        self.g.create_access(
+            AEP_PYTEST, nodes=["3101"], ports=["10"], remote_name=["remote_name1"]
+        )
+        self.g.create_access(
+            AEP_PYTEST,
+            nodes=["3101", "3102"],
+            ports=["20"],
+            remote_name=["remote_name1", "remote_name2"],
+        )
 
     def execute(self, methods):
         for method in methods:
@@ -77,7 +90,9 @@ class ACIClean(object):
             relnFroms = self.md.query(query)
 
             if relnFroms:
-                self.log.info(f"Policies using the policy {policy.dn}: {get_dn_string(relnFroms)}")
+                self.log.info(
+                    f"Policies using the policy {policy.dn}: {get_dn_string(relnFroms)}"
+                )
                 used.extend(relnFroms)
             else:
                 self.log.info(f"No policies using the policy {policy.dn}")
@@ -90,19 +105,33 @@ class ACIClean(object):
                 deployed_on = [x for x in self.md.query(query) if x.dn != policy.dn]
 
                 if deployed_on:
-                    self.log.info(f"{target_path} using the policy {policy.dn}: {get_dn_string(used)}")
+                    self.log.info(
+                        f"{target_path} using the policy {policy.dn}: {get_dn_string(used)}"
+                    )
                     used.extend(deployed_on)
                 else:
                     self.log.info(f"No {target_path} using the policy: {policy.dn}")
 
             if used:
-                self.log.info(f"Summary: Policy {policy.dn} used by {get_dn_string(used)}")
+                self.log.info(
+                    f"Summary: Policy {policy.dn} used by {get_dn_string(used)}"
+                )
             else:
                 self.log.warning(f"No policies using the policy {policy.dn}")
-                self.report_data.append({"message": f"No policies using the policy {policy.dn}", "policy": policy})
+                self.report_data.append(
+                    {
+                        "message": f"No policies using the policy {policy.dn}",
+                        "policy": policy,
+                    }
+                )
 
     def remove_all(self):
-        if input("\n!!! Removing all policies without relationships from the APIC !!! Are you really sure? (Y/n): ") != "Y":
+        if (
+            input(
+                "\n!!! Removing all policies without relationships from the APIC !!! Are you really sure? (Y/n): "
+            )
+            != "Y"
+        ):
             print("Aborting...")
             return
 
@@ -128,28 +157,90 @@ class ACIClean(object):
         self.find_relations("infraAccPortGrp", ["AccBaseGrpToEthIf"])
 
     def warning_infraAccBndlGrp(self):
-        self.find_relations("infraAccBndlGrp", ["AccBaseGrpToEthIf", "AccBndlGrpToAggrIf"])
+        self.find_relations(
+            "infraAccBndlGrp", ["AccBaseGrpToEthIf", "AccBndlGrpToAggrIf"]
+        )
 
     def warning_infraAttEntityP(self):
-        self.find_relations("infraAttEntityP", ["AttEntityPToPortGroups", "AttEntityPToPthIf", "AttEntityPToVirtualMachines"])
+        self.find_relations(
+            "infraAttEntityP",
+            [
+                "AttEntityPToPortGroups",
+                "AttEntityPToPthIf",
+                "AttEntityPToVirtualMachines",
+            ],
+        )
 
     def warning_physDomP(self):
         self.find_relations("physDomP", ["ADomPToEthIf"])
 
     def warning_fvnsVlanInstP(self):
-        self.find_relations("fvnsVlanInstP", ["VlanNsToInterface", "VlanNsToVmmPortGroups", "VlanNsToVirtualMachines"])
+        self.find_relations(
+            "fvnsVlanInstP",
+            ["VlanNsToInterface", "VlanNsToVmmPortGroups", "VlanNsToVirtualMachines"],
+        )
+
+    def warning_vzBrCP(self):
+        self.find_relations(
+            "vzBrCP",
+            [
+                "VzBrCPToFvRsCons",
+                "VzBrCPToFvRsProv",
+                "CtrctIfToEPgCons",
+                "CtrctIfToEPgConsNwIf",
+                "ABrCPToAnyCons",
+                "ABrCPToAnyProv",
+                "ABrCPToEPgProv",
+                "ABrCPToEPgCons",
+                "GraphInstancesinacontract",
+            ],
+        )
+
+    def warning_vzFilter(self):
+        self.find_relations(
+            "vzFilter",
+            [],
+        )
 
 
 @click.command()
 @click.option("--url", help="APIC URL including protocol.", envvar="ACI_APIC_URL")
 @click.option("--user", show_default="admin", help="APIC user.", envvar="ACI_APIC_USER")
-@click.option("--password", prompt=True, hide_input=True, help="APIC password.", envvar="ACI_APIC_PASSWORD")
-@click.option("-w", "--write", is_flag=True, show_default=False, help="Write report to aciclean_report.txt")
-@click.option("-r", "--remove", is_flag=True, show_default=False, help="WARNING: !!! This will remove all policies without relationships from the APIC !!!")
-@click.option("-v", "--verbose", is_flag=True, show_default=False, help="Write report to aciclean_report.txt")
+@click.option(
+    "--password",
+    prompt=True,
+    hide_input=True,
+    help="APIC password.",
+    envvar="ACI_APIC_PASSWORD",
+)
+@click.option(
+    "-w",
+    "--write",
+    is_flag=True,
+    show_default=False,
+    help="Write report to aciclean_report.txt",
+)
+@click.option(
+    "-r",
+    "--remove",
+    is_flag=True,
+    show_default=False,
+    help="WARNING: !!! This will remove all policies without relationships from the APIC !!!",
+)
+@click.option(
+    "-v",
+    "--verbose",
+    is_flag=True,
+    show_default=False,
+    help="Write report to aciclean_report.txt",
+)
 def run(url, user, password, write, remove, verbose):
     aciclean = ACIClean(url, user, password, verbose)
+
+    print("Starting search. Please be patient. This can take a while.")
+
     aciclean.execute(aciclean.get_tests())
+
     if write:
         aciclean.export_report()
 
