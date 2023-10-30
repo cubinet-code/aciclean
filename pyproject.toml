@@ -1,7 +1,7 @@
 [project]
 name = "aciclean"
 description = "ACIClean is a tool that helps you clean up your Cisco ACI infrastructure by detecting and reporting on unused objects."
-version = "v0.1.5"
+version = "v0.1.7"
 authors = [
     { name = "Oliver Fueckert", email = "oliver@cubinet.de" }
 ]
